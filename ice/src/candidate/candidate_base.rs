@@ -45,6 +45,7 @@ pub struct CandidateBase {
     pub(crate) resolved_addr: SyncMutex<SocketAddr>,
 
     pub(crate) last_sent: AtomicU64,
+    pub(crate) last_ping: AtomicU64,
     pub(crate) last_received: AtomicU64,
 
     pub(crate) conn: Option<Arc<dyn util::Conn + Send + Sync>>,
@@ -75,6 +76,7 @@ impl Default for CandidateBase {
             resolved_addr: SyncMutex::new(SocketAddr::new(IpAddr::from([0, 0, 0, 0]), 0)),
 
             last_sent: AtomicU64::new(0),
+            last_ping: AtomicU64::new(0),
             last_received: AtomicU64::new(0),
 
             conn: None,
@@ -155,6 +157,16 @@ impl Candidate for CandidateBase {
     /// Returns a time indicating the last time this candidate was sent.
     fn last_sent(&self) -> SystemTime {
         UNIX_EPOCH.add(Duration::from_nanos(self.last_sent.load(Ordering::SeqCst)))
+    }
+
+    /// Returns a time indicating the last time this candidate was sent.
+    fn last_ping(&self) -> SystemTime {
+        UNIX_EPOCH.add(Duration::from_nanos(self.last_ping.load(Ordering::SeqCst)))
+    }
+
+    fn set_last_ping(&self, d: Duration) {
+        #[allow(clippy::cast_possible_truncation)]
+        self.last_ping.store(d.as_nanos() as u64, Ordering::SeqCst);
     }
 
     /// Returns candidate NetworkType.

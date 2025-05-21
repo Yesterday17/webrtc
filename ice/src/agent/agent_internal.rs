@@ -8,6 +8,7 @@ use super::*;
 use crate::candidate::candidate_base::CandidateBaseConfig;
 use crate::candidate::candidate_peer_reflexive::CandidatePeerReflexiveConfig;
 use crate::util::*;
+use std::time::UNIX_EPOCH;
 
 pub type ChanCandidateTx =
     Arc<Mutex<Option<mpsc::Sender<Option<Arc<dyn Candidate + Send + Sync>>>>>>;
@@ -501,13 +502,22 @@ impl AgentInternal {
                 .duration_since(remote.last_received())
                 .unwrap_or_else(|_| Duration::from_secs(0));
 
+            let last_ping = SystemTime::now()
+                .duration_since(local.last_ping())
+                .unwrap_or_else(|_| Duration::from_secs(0));
+
             if (self.keepalive_interval != Duration::from_secs(0))
                 && ((last_sent > self.keepalive_interval)
-                    || (last_received > self.keepalive_interval))
+                    || (last_received > self.keepalive_interval)
+                    || (last_ping > self.keepalive_interval))
             {
                 // we use binding request instead of indication to support refresh consent schemas
                 // see https://tools.ietf.org/html/rfc7675
                 self.ping_candidate(&local, &remote).await;
+                let d = SystemTime::now()
+                    .duration_since(UNIX_EPOCH)
+                    .unwrap_or_else(|_| Duration::from_secs(0));
+                local.set_last_ping(d);
             }
         }
     }

@@ -17,7 +17,7 @@ use std::fmt;
 use std::net::{IpAddr, SocketAddr};
 use std::sync::atomic::Ordering;
 use std::sync::Arc;
-use std::time::SystemTime;
+use std::time::{Duration, SystemTime};
 
 use async_trait::async_trait;
 use candidate_base::*;
@@ -60,6 +60,9 @@ pub trait Candidate: fmt::Display {
 
     /// The last time this candidate sent traffic
     fn last_sent(&self) -> SystemTime;
+
+    fn last_ping(&self) -> SystemTime;
+    fn set_last_ping(&self, d: Duration);
 
     fn network_type(&self) -> NetworkType;
     fn address(&self) -> String;
